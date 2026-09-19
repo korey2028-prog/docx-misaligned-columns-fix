@@ -20,7 +20,7 @@ agent_created: true
 2. **列宽实测**：用 Pillow 按目标字体实测各列最长文本宽度；dxa 刻度 = font_size(pt)×20。总列宽 ≤ pgSz.w − pgMar.left − pgMar.right；优先等宽选项列；内边距（左 120/右 80 dxa）计入余量。
 3. **编辑器写入**：present_files 呈现副本 → get_pool_status 拿 file_id → doc_find 逐段定位 → **从后往前** doc_delete_paragraph 删旧段 → doc_insert_table 插空表 → doc_set_table_cells 批量填内容（common_cell_properties 统一字体字号）→ doc_set_table_properties 设无边框/fixed/列宽/内边距 → save_file。
 4. **保存后 XML 补丁**：跑 `scripts/post_save_patch.py`（自动备份）修两个 editor_sdk 已知副作用：①域 instrText 被拍平成可见文字；②表格行加 `<w:cantSplit/>` 防单行跨页拆分。
-5. **核验**：跑 `scripts/verify_docx_diff.py <原件> <成品>` 做元素级全文档 diff，确认除目标区外零改动；逐行核对内容对应关系；向用户标注"视觉验收待确认"（无法渲染真实页面时不得宣称通过）。
+5. **核验**：跑 `scripts/verify_docx_diff.py <原件> <成品>` 做元素级全文档 diff，确认除目标区外零改动；逐行核对内容对应关系；再用 LibreOffice 渲染 PDF 做视觉验收（文字层/几何层/目检三级检查，见 playbook 阶段 5），并量化报告分页位移。确实无法渲染时才标注"视觉验收待确认"。
 
 ## 已知坑（必读）
 
