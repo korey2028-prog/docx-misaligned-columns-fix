@@ -23,18 +23,6 @@
 - 无边框、无底色、无表头，视觉上和正文融为一体；
 - 原文内容零改动（逐项 diff 核验）。
 
-## 安装
-
-复制到 WorkBuddy 的用户级 skill 目录：
-
-```bash
-git clone https://github.com/korey2028-prog/docx-misaligned-columns-fix.git
-mkdir -p ~/.workbuddy/skills
-cp -r docx-misaligned-columns-fix ~/.workbuddy/skills/
-```
-
-依赖：`python3`（编辑通道由 WorkBuddy 内置的 `tencent-local-office-edit` skill 提供），列宽实测需要 `pip install pillow lxml`。
-
 ## 工作流程（五阶段）
 
 1. **只读侦察（XML）** — 解包 docx 用 lxml 定位目标区：确认伪对齐手段（Tab/空格/自动编号）、题号来源（numPr 自动编号要查 numbering.xml 的 start 值）、所在节的页面宽度与边距。
@@ -58,14 +46,48 @@ python3 scripts/post_save_patch.py 成品.docx --cantsplit-marker "A. congratula
 python3 scripts/verify_docx_diff.py 原件.docx 成品.docx
 ```
 
+## 安装与使用
+
+### 方式一：WorkBuddy 用户（最省事）
+
+把本仓库克隆到 `~/.workbuddy/skills/docx-misaligned-columns-fix/`，重启会话即可。之后只要对 WorkBuddy 说"帮我把这份 docx 里的完形选项对齐"，skill 会自动触发，编辑、补丁、核验全流程自动走。
+
+### 方式二：其他 AI Agent（豆包 / Codex / 任何能操作本地文件的 Agent）
+
+需要：`python3` + `pip install lxml pillow`（唯一两个第三方依赖）。
+
+把仓库链接发给你的 Agent，并附上这段话：
+
+> 请阅读这个仓库的 SKILL.md 和 references/playbook.md，按照里面的方法论处理我给你的 docx：
+> 把"Tab/空格硬凑对齐"的选项列改成无框线固定表格。要求：① 先做 XML 只读侦察（表格方案不依赖制表位，微信预览也能对齐）；② 列宽用 Pillow 按文档实际字体实测，不许估算；③ 编辑完成后运行 scripts/post_save_patch.py 打补丁（域指令恢复 + cantSplit + 单元格左对齐），再运行 scripts/verify_docx_diff.py 与原件做全文档 diff 核验；④ 全程从副本改，不覆盖原件；⑤ 核验不通过的文件不许标记完成。
+
+两个脚本脱离 WorkBuddy 也能独立使用：
+
+```bash
+# 保存后修补：域指令恢复 + 行禁止跨页拆分 + 单元格强制左对齐（自动备份）
+python3 scripts/post_save_patch.py 成品.docx \
+    --cantsplit-marker "A. congratulation" --left-align-marker "A. congratulation"
+
+# 与原件做元素级全文档差异核验（验收标准：除目标区外零差异）
+python3 scripts/verify_docx_diff.py 原件.docx 成品.docx
+```
+
+### 方式三：不用 AI，手动改
+
+方法论照旧适用：无框线表格 + 固定列宽 + 按真实字体测宽。改完用 `verify_docx_diff.py` 自查一遍再交。
+
 ## 已知坑（实测踩过）
 
+- **微信 docx 预览不支持制表位**：Tab/制表位方案在 Word/WPS/LibreOffice 里都对，微信预览会把 tab 当普通空格——**列对齐只有无框线表格这一条可靠路径**。
+- **默认段落样式可能是两端对齐（jc=both）**：表格单元格继承它后，长选项折行时首行被拉伸（单行看不出来，潜伏雷）。用 `--left-align-marker` 强制左对齐。
 - **编辑器会把域指令拍平**：editor_sdk 保存时可能把域的 `instrText` 变成可见文字（实测出现在离目标区很远的段落），必须全文档扫描恢复并如实报告。
 - **cantSplit 设置不了**：编辑器表格工具的 `cant_split=true` 语义是"允许跨页断行"，想"禁止拆分"只能保存后 XML 补丁。
 - **file_id 会过期**：预览面板重开会换 UUID，编辑器报 `document is not open` 就重新取。
 - **写操作后坐标全部失效**：批量删除务必从后往前，可免去逐次重查。
 - **自动编号题号随段落删除而消失**：表格首列需显式写回原编号。
 - **多节文档各节页边距/分栏不同**：列宽必须按目标区所在节重算。
+- **核验假阳性**：多套卷子并存时题号重复（多份卷都有"23. A. …"），按题号匹配会误报——核验要带上下文或按唯一选项文本定位。
+- **WPS 特有属性 `firstLineChars`**：Word 与 LibreOffice 解释不同（差约 20pt），跨平台 tab 起点漂移的元凶之一；表格方案天然免疫。
 
 完整操作序列见 [references/playbook.md](references/playbook.md)。
 
