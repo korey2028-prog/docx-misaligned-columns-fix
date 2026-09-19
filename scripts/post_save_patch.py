@@ -3,6 +3,7 @@
 
 用法:
   python3 post_save_patch.py <file.docx> --cantsplit-marker "<表格内特征文本>"
+      [--left-align-marker "<表格内特征文本>"]
       [--backup-dir /tmp] [--field-keywords HYPERLINK,PAGEREF,TOC,SEQ,MERGEFIELD]
 
 自动完成（写前先备份原文件）:
@@ -10,8 +11,11 @@
      （仅当该 run 位于 fldChar begin 与 separate/end 之间才改，避免误伤普通文本）。
   2. add-cantsplit : 给包含 --cantsplit-marker 文本的表格的所有行加 <w:cantSplit/>，
      防止单题行在页边界被拆成两页。
+  3. left-align    : 给包含 --left-align-marker 文本的表格的所有单元格段落
+     强制 jc=left —— 默认段落样式常为两端对齐（jc=both），继承进单元格后
+     长选项折行时首行会被拉伸（单行时看不出，潜伏雷）。
 
-退出码: 0=成功, 2=未找到 cantsplit 目标表格, 其他=异常。
+退出码: 0=成功, 2=未找到 cantsplit/left-align 目标表格, 其他=异常。
 """
 
 import argparse

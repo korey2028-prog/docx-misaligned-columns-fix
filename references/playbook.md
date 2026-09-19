@@ -44,7 +44,7 @@ f = ImageFont.truetype("/System/Library/Fonts/Supplemental/Times New Roman.ttf",
 w = f.getlength("A. congratulation")   # 返回 dxa
 ```
 
-- 对每列取**最长文本**（含 "A. " 前缀）实测；macOS 字体目录：`/System/Library/Fonts/Supplemental/`。
+- 对每列取**最长文本**（含 "A. " 前缀）实测；字体路径按平台：macOS `/System/Library/Fonts/Supplemental/`（如 `Times New Roman.ttf`），Windows `C:/Windows/Fonts/times.ttf`，Linux 常见在 `/usr/share/fonts/` 下检索 `fc-list | grep -i times`。字体文件缺失时必须找到同名同版本字体实测，禁止退回估算。
 - 列宽 = max 文本宽 + 内边距（左 120 + 右 80 dxa）；所有列求和 ≤ 可用宽度；放不下时按指令在总宽内压缩等宽列，仍放不下 → 该块保留原样并列入异常清单，**不硬塞**。
 - 优先等宽选项列（同一选项块内 A/B/C/D 列等宽），题号列单独窄列。
 
